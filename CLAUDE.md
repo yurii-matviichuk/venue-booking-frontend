@@ -11,6 +11,7 @@ Venue booking web app. Users browse venues, pick an available time slot, and che
 - `npm run dev` — start the Vite dev server
 - `npm run build` — type-check (`tsc -b`) then production build via Vite
 - `npm run lint` — run ESLint over the whole project
+- `npm run lint:fix` — run ESLint and auto-fix what it can
 - `npm run format` / `npm run format:check` — write/check formatting with Prettier
 - `npm run preview` — serve the production build locally
 
@@ -26,3 +27,4 @@ There is no test runner configured in this project yet.
 - **TypeScript project layout**: `tsconfig.json` is a solution file referencing two project configs — `tsconfig.app.json` (app code under `src/`, targets DOM libs) and `tsconfig.node.json` (`vite.config.ts`, targets Node). When adding compiler options, edit the relevant sub-config, not the root `tsconfig.json`.
 - **ESLint**: flat config (`eslint.config.js`) combining `@eslint/js` recommended rules, `typescript-eslint` recommended rules, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh` (Vite variant), and `eslint-config-prettier` last (disables stylistic rules that conflict with Prettier). Applies to `**/*.{ts,tsx}`; `dist` is ignored.
 - **Env vars**: copy `.env.example` to `.env` before running the app. `.env*` files are gitignored.
+- **Git hooks**: Husky (installed by the `prepare` script on `npm install`) runs `.husky/pre-commit`, which executes `npm run lint && npm run build` before each commit. Prettier is not in the hook.
