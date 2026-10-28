@@ -1,7 +1,9 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useBookingStore } from '../store/bookingStore';
-import { API_URL } from '../lib/api';
+import { useAuthStore } from '../store/authStore';
+import { apiFetch, ApiError } from '../lib/api';
+import TimeSlotSelector from '../components/TimeSlotSelector';
 import type { TimeSlot, Venue } from '../types';
 
 export default function AvailabilityPage() {
@@ -19,15 +21,19 @@ export default function AvailabilityPage() {
 
     const fetchData = async () => {
       try {
-        const venueRes = await fetch(`${API_URL}/venues/${venueId}`);
-        const venueData = await venueRes.json();
+        const venueData = await apiFetch<Venue>(`/venues/${venueId}`);
         setVenueData(venueData);
-        setVenue(venueId);
-
-        const slotsRes = await fetch(`${API_URL}/availability/${venueId}`);
-        const slotsData = await slotsRes.json();
-        setSlots(slotsData);
+        setVenue(venueData);
+        setSlots(await apiFetch<TimeSlot[]>(`/availability/${venueId}`));
       } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          useAuthStore.setState({ user: null });
+          return;
+        }
+        if (err instanceof ApiError && err.status === 404) {
+          setVenueData(null);
+          return;
+        }
         console.error('Failed to fetch data:', err);
         setError('Failed to load venue availability. Please try again.');
       } finally {
@@ -46,8 +52,8 @@ export default function AvailabilityPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
       <div className="max-w-4xl mx-auto">
         <button
-          onClick={() => navigate('/')}
-          className="mb-8 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+          onClick={() => navigate(`/?city=${encodeURIComponent(venue.city)}`)}
+          className="mb-8 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded cursor-pointer"
         >
           ← Back
         </button>
@@ -57,34 +63,13 @@ export default function AvailabilityPage() {
 
         <h2 className="text-2xl font-bold mb-4">Available Time Slots</h2>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {slots.map((slot) => (
-            <button
-              key={slot.id}
-              onClick={() => {
-                setSlot(slot.id, slot.price);
-                navigate('/checkout');
-              }}
-              disabled={!slot.available}
-              className={`p-4 border-2 rounded-lg font-bold ${
-                slot.available
-                  ? 'bg-white border-indigo-500 hover:bg-indigo-50 cursor-pointer'
-                  : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              <div className="text-sm">
-                {new Date(slot.time).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </div>
-              <div className="text-lg">${slot.price}</div>
-              <div className="text-xs">
-                {slot.available ? `${slot.spotsRemaining} spots` : 'Full'}
-              </div>
-            </button>
-          ))}
-        </div>
+        <TimeSlotSelector
+          slots={slots}
+          onSelect={(slot) => {
+            setSlot(slot);
+            navigate('/checkout');
+          }}
+        />
       </div>
     </div>
   );

@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import type { Booking } from '../types';
+import type { Booking, TimeSlot, Venue } from '../types';
 
 interface BookingStore {
   booking: Booking;
-  setVenue: (venueId: string) => void;
+  setVenue: (venue: Venue) => void;
   setDate: (date: Date) => void;
-  setSlot: (slotId: string, price: number) => void;
+  setSlot: (slot: TimeSlot) => void;
   setCustomer: (name: string, email: string) => void;
   reset: () => void;
 }
@@ -13,23 +13,38 @@ interface BookingStore {
 export const useBookingStore = create<BookingStore>((set) => ({
   booking: {
     venueId: '',
+    venueName: '',
+    venueCity: '',
     slotId: '',
+    slotTime: '',
+    slotEndTime: '',
     customerName: '',
     customerEmail: '',
     date: null,
     totalPrice: 0,
   },
-  setVenue: (venueId) =>
+  setVenue: (venue) =>
     set((state) => ({
-      booking: { ...state.booking, venueId },
+      booking: {
+        ...state.booking,
+        venueId: venue.id,
+        venueName: venue.name,
+        venueCity: venue.city,
+      },
     })),
   setDate: (date) =>
     set((state) => ({
       booking: { ...state.booking, date },
     })),
-  setSlot: (slotId, price) =>
+  setSlot: (slot) =>
     set((state) => ({
-      booking: { ...state.booking, slotId, totalPrice: price },
+      booking: {
+        ...state.booking,
+        slotId: slot.id,
+        slotTime: slot.time,
+        slotEndTime: slot.endTime,
+        totalPrice: slot.price,
+      },
     })),
   setCustomer: (name, email) =>
     set((state) => ({
@@ -39,7 +54,11 @@ export const useBookingStore = create<BookingStore>((set) => ({
     set({
       booking: {
         venueId: '',
+        venueName: '',
+        venueCity: '',
         slotId: '',
+        slotTime: '',
+        slotEndTime: '',
         customerName: '',
         customerEmail: '',
         date: null,

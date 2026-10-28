@@ -2,12 +2,17 @@ export interface Venue {
   id: string;
   name: string;
   location: string;
+  city: string;
   timezone: string;
+  category: string;
+  description: string;
+  imageFile: string | null;
 }
 
 export interface TimeSlot {
   id: string;
   time: string;
+  endTime: string;
   price: number;
   available: boolean;
   spotsRemaining: number;
@@ -15,7 +20,11 @@ export interface TimeSlot {
 
 export interface Booking {
   venueId: string;
+  venueName: string;
+  venueCity: string;
   slotId: string;
+  slotTime: string;
+  slotEndTime: string;
   customerName: string;
   customerEmail: string;
   date: Date | null;

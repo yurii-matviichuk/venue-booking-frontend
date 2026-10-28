@@ -1,47 +1,39 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useBookingStore } from '../store/bookingStore';
-import { API_URL } from '../lib/api';
+import { useAuthStore } from '../store/authStore';
+import { apiFetch, ApiError } from '../lib/api';
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { booking, setCustomer, reset } = useBookingStore();
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const { booking, reset } = useBookingStore();
+  const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!customerName || !customerEmail) {
-      setError('Please fill in all fields');
-      return;
-    }
-
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}/bookings`, {
+      // The backend takes the customer's name and email from the logged-in user
+      await apiFetch('/bookings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           venueId: booking.venueId,
           slotId: booking.slotId,
-          customerName,
-          customerEmail,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Booking failed');
-      }
-
-      setCustomer(customerName, customerEmail);
       reset();
       navigate('/confirmation');
     } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        navigate('/login', { state: { from: '/checkout' } });
+        return;
+      }
       setError('Failed to create booking. Please try again.');
       console.error(err);
     } finally {
@@ -63,7 +55,7 @@ export default function CheckoutPage() {
       <div className="max-w-2xl mx-auto">
         <button
           onClick={() => navigate(-1)}
-          className="mb-8 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+          className="mb-8 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded cursor-pointer"
         >
           ← Back
         </button>
@@ -73,7 +65,36 @@ export default function CheckoutPage() {
 
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
             <p className="mb-2">
-              <strong>Price:</strong> ${booking.totalPrice}
+              <strong>Venue:</strong> {booking.venueName}
+            </p>
+            <p className="mb-2">
+              <strong>City:</strong> {booking.venueCity}
+            </p>
+            <p className="mb-2">
+              <strong>Date:</strong>{' '}
+              {new Date(booking.slotTime).toLocaleDateString('en-US', {
+                dateStyle: 'full',
+              })}
+            </p>
+            <p className="mb-2">
+              <strong>Time:</strong>{' '}
+              {[booking.slotTime, booking.slotEndTime]
+                .map((time) =>
+                  new Date(time).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  }),
+                )
+                .join(' – ')}
+            </p>
+            <p className="mb-2">
+              <strong>Name:</strong> {user?.name}
+            </p>
+            <p className="mb-2">
+              <strong>Email:</strong> {user?.email}
+            </p>
+            <p className="mb-2">
+              <strong>Price:</strong> ${booking.totalPrice} (1 spot)
             </p>
             <p>
               <strong>Status:</strong> Pending Payment
@@ -81,28 +102,6 @@ export default function CheckoutPage() {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block font-bold mb-2">Name</label>
-              <input
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full border-2 border-gray-300 rounded-lg p-3"
-                required
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block font-bold mb-2">Email</label>
-              <input
-                type="email"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                className="w-full border-2 border-gray-300 rounded-lg p-3"
-                required
-              />
-            </div>
-
             {error && <div className="mb-4 text-red-600">{error}</div>}
 
             <button
