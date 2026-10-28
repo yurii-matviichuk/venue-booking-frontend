@@ -21,3 +21,23 @@ export interface Booking {
   date: Date | null;
   totalPrice: number;
 }
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'customer' | 'admin';
+  createdAt: string;
+}
+
+export interface MyBooking {
+  id: string;
+  venueId: string;
+  slotId: string;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  price: number;
+  venueName: string;
+  venueLocation: string;
+  startTime: string;
+  endTime: string;
+}

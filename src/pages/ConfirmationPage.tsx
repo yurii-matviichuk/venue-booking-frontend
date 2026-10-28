@@ -19,6 +19,12 @@ export default function ConfirmationPage() {
           >
             Book Another Venue
           </button>
+          <button
+            onClick={() => navigate('/my-bookings')}
+            className="ml-4 text-indigo-700 font-bold hover:underline cursor-pointer"
+          >
+            View my bookings
+          </button>
         </div>
       </div>
     </div>
