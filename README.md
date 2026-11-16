@@ -85,3 +85,14 @@ npm test
 ```
 
 The tests are small unit tests that sit next to the code (`*.test.ts` / `*.test.tsx`). They cover the parts with real logic: `apiFetch` error handling, the auth and booking stores, the `RequireAuth` redirect and role check, the date and timezone helpers, and the booking helpers (totals, grouping, expired status). `fetch` is mocked, so the backend doesn't need to be running. The booking rules themselves are tested in the backend. There are no tests for the pages yet.
+
+## Deployment
+
+The app is deployed on Vercel and talks to the API on Render. Set `VITE_API_URL=/api` in the Vercel project settings.
+
+`vercel.json` does two things:
+
+- It forwards every `/api/...` request to the Render API. The browser then only talks to the Vercel domain, so the session cookie is first-party and isn't blocked by browsers that block third-party cookies, such as Safari.
+- It serves `index.html` for every other path, so refreshing or opening a route like `/login` directly works with client-side routing.
+
+If the API moves to another URL, update the destination in `vercel.json`. The backend's `CLIENT_URL` must be set to the exact Vercel origin.
