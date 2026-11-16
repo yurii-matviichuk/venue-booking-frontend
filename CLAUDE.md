@@ -1,30 +1,69 @@
-# CLAUDE.md
+# Venue Booking Web App
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Web app for browsing venues and booking time slots. Visitors browse venues, pick a slot and log in to book spots; customers see their own bookings, and venue owners get a page that groups incoming bookings by status. Slots are shown in each venue's timezone. The app talks to a REST API (`VITE_API_URL`). It is a portfolio demo: all data is fictional.
 
-## Project state
+## Stack
 
-Venue booking web app. Users browse venues, pick an available time slot, and check out to create a booking against a separate backend API (not part of this repo).
+- **UI:** React 19 with TypeScript
+- **Build and dev server:** Vite
+- **Styling:** Tailwind CSS v4, loaded through the `@tailwindcss/vite` plugin
+- **Routing:** `react-router-dom`
+- **State:** Zustand
+- **Testing:** Vitest, jsdom, React Testing Library
+- **Tooling:** ESLint, Prettier, Husky pre-commit hook
 
 ## Commands
 
-- `npm run dev` — start the Vite dev server
-- `npm run build` — type-check (`tsc -b`) then production build via Vite
-- `npm run lint` — run ESLint over the whole project
-- `npm run lint:fix` — run ESLint and auto-fix what it can
-- `npm run format` / `npm run format:check` — write/check formatting with Prettier
+- `npm run dev` — Vite dev server
+- `npm run build` — type-check (`tsc -b`) then production build
+- `npm run lint` / `npm run format:check` — run before committing (`lint:fix` and `format` fix issues)
+- `npm test` — run the Vitest suite once
 - `npm run preview` — serve the production build locally
 
-There is no test runner configured in this project yet.
+The pre-commit hook runs `npm run lint && npm run build && npm test`. It does not run Prettier.
 
-## Architecture
+## Structure
 
-- **Stack**: React 19 + TypeScript, built with Vite, styled with Tailwind CSS v4 (loaded via the `@tailwindcss/vite` plugin and `@import 'tailwindcss'` in `src/index.css` — there is no `tailwind.config.js`). Routing via `react-router-dom`, client state via `zustand`.
-- **Entry point**: `src/main.tsx` mounts `App` from `src/App.tsx` into `#root` (defined in `index.html`) inside `StrictMode`. `App.tsx` only defines the `react-router-dom` routes; each route renders a page from `src/pages/`.
-- **Booking flow**: `HomePage` (`/`) lists venues → `AvailabilityPage` (`/availability/:venueId`) shows time slots → selecting a slot writes to the Zustand store and navigates to `CheckoutPage` (`/checkout`), which submits the booking → `ConfirmationPage` (`/confirmation`). In-progress booking selections (venue, slot, price, customer info) live in `src/store/bookingStore.ts`, not in the URL or component state, so pages read/write it directly rather than passing props down the route chain.
-- **API access**: `src/lib/api.ts` exports `API_URL`, read from the `VITE_API_URL` env var (see `.env.example`). Pages call the backend directly with `fetch` and `${API_URL}/...`; there is no shared API client/wrapper yet. `axios` is a dependency but not currently used anywhere.
-- **Types**: shared domain types (`Venue`, `TimeSlot`, `Booking`) live in `src/types/index.ts`.
-- **TypeScript project layout**: `tsconfig.json` is a solution file referencing two project configs — `tsconfig.app.json` (app code under `src/`, targets DOM libs) and `tsconfig.node.json` (`vite.config.ts`, targets Node). When adding compiler options, edit the relevant sub-config, not the root `tsconfig.json`.
-- **ESLint**: flat config (`eslint.config.js`) combining `@eslint/js` recommended rules, `typescript-eslint` recommended rules, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh` (Vite variant), and `eslint-config-prettier` last (disables stylistic rules that conflict with Prettier). Applies to `**/*.{ts,tsx}`; `dist` is ignored.
-- **Env vars**: copy `.env.example` to `.env` before running the app. `.env*` files are gitignored.
-- **Git hooks**: Husky (installed by the `prepare` script on `npm install`) runs `.husky/pre-commit`, which executes `npm run lint && npm run build` before each commit. Prettier is not in the hook.
+- `src/App.tsx` only defines the routes; each route renders a page from `src/pages/`
+- `src/pages/` holds one component per route
+- `src/components/` holds shared UI. `BookingCard` is the one booking card used by both booking lists; give it the action buttons as children
+- `src/store/` holds the Zustand stores: `authStore` (logged-in user) and `bookingStore` (the in-progress booking)
+- `src/lib/` holds `api.ts` (`apiFetch`, `ApiError`), `dates.ts` (timezone-aware date helpers) and `bookings.ts` (booking display helpers shared by the customer and owner lists: status badges, slot text in the venue's timezone, totals, and grouping owner bookings into waiting, confirmed, past and cancelled)
+- `src/types/index.ts` holds the shared types. `Booking` is the in-progress selection; `MyBooking` is a saved booking returned by the API.
+- `public/images/venues/` holds venue photos, matched to a venue by its `imageFile` name
+
+## Conventions
+
+- Make every request through `apiFetch` in `src/lib/api.ts`. It prefixes `API_URL` (which includes `/api`, so paths look like `/auth/me`), sends the session cookie (`credentials: 'include'`), and throws an `ApiError` (`status`, the API's `code`, first validation message).
+- Keep in-progress booking selections in `src/store/bookingStore.ts`, not in the URL or component state.
+- Wrap pages that need a logged-in user in `RequireAuth`. It waits for the session check, then redirects to `/login` with the original path in router state. Pass `role="owner"` to restrict a page to one role (other users go to `/`). This only hides the page: the API enforces the real permissions.
+- A 401 from `/auth/me` just means nobody is logged in. `logout` also resets the booking store so the next person doesn't inherit the previous selection.
+- Show and group slots in the venue's timezone with the helpers in `src/lib/dates.ts`, not the browser's.
+- Checkout sends the venue id, slot id and number of spots; the customer is identified by the session. A slot's price is per spot, so the total is `pricePerSpot × spots`.
+- Edit `tsconfig.app.json` (code under `src/`) or `tsconfig.node.json` (`vite.config.ts`) for compiler options, not the root `tsconfig.json`, which is only a solution file.
+- Tailwind v4 is loaded by the `@tailwindcss/vite` plugin and `@import 'tailwindcss'` in `src/index.css`; there is no `tailwind.config.js`.
+
+## Things to avoid
+
+- Don't call `fetch` directly; use `apiFetch`.
+- Don't store or read an auth token; the session is an `httpOnly` cookie set by the API.
+- Don't change `src/types/index.ts` to differ from the API's response shapes.
+- Don't commit `.env` files or credentials.
+
+## Environment
+
+Copy `.env.example` to `.env` (`.env*` is gitignored). `VITE_API_URL` is the API base URL including `/api`, and is baked in at build time. The API must allow the dev server origin (`http://localhost:5173`) exactly, or the session cookie is not sent.
+
+## Testing
+
+Vitest with `jsdom` and React Testing Library, configured in the `test` block of `vite.config.ts`. Tests sit next to the code as `*.test.ts(x)` in `src/`.
+
+- Import `describe`, `it`, `expect`, `vi` from `vitest` (globals are off). Component tests need `afterEach(cleanup)`, because Testing Library doesn't clean up without globals.
+- `VITE_API_URL` is fixed to `http://api.test/api` in the test config, so tests don't depend on `.env`.
+- Mock `fetch` with `vi.stubGlobal('fetch', ...)`, returning a new `Response` on every call (a body can only be read once). Never call the real API from tests.
+- Zustand stores are global: reset them with `setState` in `beforeEach`.
+
+## Known limitations
+
+- Tests cover only `lib/api.ts`, `lib/dates.ts`, `lib/bookings.ts`, `store/authStore.ts`, `store/bookingStore.ts`, `components/RequireAuth.tsx`, `components/BookingCard.tsx` and `components/ConfirmDialog.tsx`. Pages and the other components, including the owner page, have no tests.
+- No end-to-end test of the full flow in a real browser.
