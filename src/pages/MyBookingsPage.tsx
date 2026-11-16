@@ -1,26 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import BookingCard from '../components/BookingCard';
+import ConfirmDialog from '../components/ConfirmDialog';
 import Header from '../components/Header';
 import { apiFetch, ApiError } from '../lib/api';
+import { groupBookingsByStatus } from '../lib/bookings';
 import { useAuthStore } from '../store/authStore';
 import type { MyBooking } from '../types';
-
-const statusStyles: Record<MyBooking['status'], string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-gray-200 text-gray-600',
-};
-
-const formatSlot = (booking: MyBooking) => {
-  const start = new Date(booking.startTime);
-  const end = new Date(booking.endTime);
-  const time = { hour: '2-digit', minute: '2-digit' } as const;
-  return `${start.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })}, ${start.toLocaleTimeString('en-US', time)} – ${end.toLocaleTimeString('en-US', time)}`;
-};
 
 export default function MyBookingsPage() {
   const navigate = useNavigate();
@@ -28,6 +14,7 @@ export default function MyBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [toCancel, setToCancel] = useState<MyBooking | null>(null);
   const [now] = useState(() => Date.now());
 
   useEffect(() => {
@@ -51,10 +38,6 @@ export default function MyBookingsPage() {
   }, []);
 
   const handleCancel = async (booking: MyBooking) => {
-    if (!window.confirm(`Cancel your booking at ${booking.venueName}?`)) {
-      return;
-    }
-
     setCancellingId(booking.id);
     setError('');
 
@@ -82,42 +65,36 @@ export default function MyBookingsPage() {
 
   if (loading) return <div className="p-8">Loading...</div>;
 
-  const isUpcoming = (b: MyBooking) => new Date(b.startTime).getTime() > now;
-  // The API returns the latest slot first; upcoming reads better soonest first
-  const upcoming = bookings.filter(isUpcoming).reverse();
-  const past = bookings.filter((b) => !isUpcoming(b));
+  const groups = groupBookingsByStatus(bookings, now);
+  const sections = [
+    { title: 'Waiting for confirmation', bookings: groups.pending },
+    { title: 'Confirmed', bookings: groups.confirmed },
+    { title: 'Past', bookings: groups.past },
+    { title: 'Cancelled', bookings: groups.cancelled },
+  ].filter((section) => section.bookings.length > 0);
 
-  const renderCard = (booking: MyBooking, canCancel: boolean) => (
-    <div
-      key={booking.id}
-      className="bg-white rounded-lg shadow-lg p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-    >
-      <div>
-        <h3 className="text-2xl font-bold text-gray-900">
-          {booking.venueName}
-        </h3>
-        <p className="text-gray-600 mb-2">📍 {booking.venueLocation}</p>
-        <p className="font-bold">{formatSlot(booking)}</p>
-        <p className="text-gray-600">${booking.price}</p>
-      </div>
-      <div className="flex sm:flex-col items-start sm:items-end gap-3">
-        <span
-          className={`px-3 py-1 rounded-full text-sm font-bold capitalize ${statusStyles[booking.status]}`}
-        >
-          {booking.status}
-        </span>
-        {canCancel && booking.status !== 'cancelled' && (
+  const renderCard = (booking: MyBooking) => {
+    // The slot has started: nothing left to cancel
+    const started = Date.parse(booking.startTime) <= now;
+    return (
+      <BookingCard
+        key={booking.id}
+        booking={booking}
+        started={started}
+        viewer="customer"
+      >
+        {booking.status !== 'cancelled' && !started && (
           <button
-            onClick={() => handleCancel(booking)}
+            onClick={() => setToCancel(booking)}
             disabled={cancellingId === booking.id}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 cursor-pointer"
+            className="bg-red-600 enabled:hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 enabled:cursor-pointer disabled:cursor-not-allowed"
           >
             {cancellingId === booking.id ? 'Cancelling...' : 'Cancel'}
           </button>
         )}
-      </div>
-    </div>
-  );
+      </BookingCard>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
@@ -131,9 +108,21 @@ export default function MyBookingsPage() {
           ← Back
         </button>
 
-        <h1 className="text-4xl font-bold mb-8">My Bookings</h1>
+        <h1 className="text-4xl font-bold mb-8">My bookings</h1>
 
         {error && <div className="mb-4 text-red-600">{error}</div>}
+
+        <ConfirmDialog
+          open={toCancel !== null}
+          title="Cancel this booking?"
+          message={`Your booking at ${toCancel?.venueName ?? ''} will be cancelled and its spots released.`}
+          confirmLabel="Cancel booking"
+          onConfirm={() => {
+            if (toCancel) handleCancel(toCancel);
+            setToCancel(null);
+          }}
+          onCancel={() => setToCancel(null)}
+        />
 
         {bookings.length === 0 && !error && (
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
@@ -149,23 +138,14 @@ export default function MyBookingsPage() {
           </div>
         )}
 
-        {upcoming.length > 0 && (
-          <>
-            <h2 className="text-2xl font-bold mb-4">Upcoming</h2>
-            <div className="grid gap-4 mb-8">
-              {upcoming.map((b) => renderCard(b, true))}
-            </div>
-          </>
-        )}
-
-        {past.length > 0 && (
-          <>
-            <h2 className="text-2xl font-bold mb-4">Past</h2>
-            <div className="grid gap-4">
-              {past.map((b) => renderCard(b, false))}
-            </div>
-          </>
-        )}
+        {sections.map((section) => (
+          <section key={section.title} className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">
+              {section.title} ({section.bookings.length})
+            </h2>
+            <div className="grid gap-4">{section.bookings.map(renderCard)}</div>
+          </section>
+        ))}
       </div>
     </div>
   );

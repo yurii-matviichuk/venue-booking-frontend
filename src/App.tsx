@@ -7,6 +7,7 @@ import ConfirmationPage from './pages/ConfirmationPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import MyBookingsPage from './pages/MyBookingsPage';
+import OwnerBookingsPage from './pages/OwnerBookingsPage';
 import RequireAuth from './components/RequireAuth';
 import { useAuthStore } from './store/authStore';
 
@@ -37,6 +38,14 @@ function App() {
           element={
             <RequireAuth>
               <MyBookingsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/owner/bookings"
+          element={
+            <RequireAuth role="owner">
+              <OwnerBookingsPage />
             </RequireAuth>
           }
         />

@@ -1,3 +1,4 @@
+import Header from '../components/Header';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import AuthField from '../components/AuthField';
@@ -31,6 +32,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <div className="max-w-6xl mx-auto">
+        <Header showAuthLinks={false} />
+      </div>
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-3xl font-bold mb-6">Log in</h1>
@@ -56,7 +60,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 cursor-pointer"
+              className="w-full bg-indigo-600 enabled:hover:bg-indigo-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 enabled:cursor-pointer disabled:cursor-not-allowed"
             >
               {loading ? 'Logging in...' : 'Log in'}
             </button>

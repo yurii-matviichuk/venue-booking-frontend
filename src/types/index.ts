@@ -40,18 +40,28 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'customer' | 'admin';
+  role: 'customer' | 'owner';
   createdAt: string;
 }
 
 export interface MyBooking {
   id: string;
+  createdAt: string;
   venueId: string;
   slotId: string;
+  spots: number;
   status: 'pending' | 'confirmed' | 'cancelled';
   price: number;
   venueName: string;
-  venueLocation: string;
+  venueAddress: string;
+  venueCity: string;
+  venueTimezone: string;
   startTime: string;
   endTime: string;
+}
+
+// A booking as the venue owner sees it: a MyBooking plus who made it
+export interface OwnerBooking extends MyBooking {
+  customerName: string;
+  customerEmail: string;
 }
