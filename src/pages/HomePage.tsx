@@ -1,8 +1,8 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { apiFetch } from '../lib/api';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import VenueCard from '../components/VenueCard';
+import { apiFetch } from '../lib/api';
 import type { Venue } from '../types';
 
 export default function HomePage() {

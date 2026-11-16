@@ -32,14 +32,31 @@ export default function VenueCard({ venue, onBook }: VenueCardProps) {
           {venue.category}
         </span>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">{venue.name}</h2>
-        <p className="text-gray-600 mb-2">📍 {venue.location}</p>
+        <p className="text-gray-600 mb-2">
+          📍 {venue.address}, {venue.city}
+        </p>
         <p className="text-gray-600 mb-6 grow">{venue.description}</p>
-        <button
-          onClick={() => onBook(venue.id)}
-          className="self-start mt-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg transition-colors cursor-pointer"
-        >
-          Book Now
-        </button>
+        <div className="mt-auto flex items-center justify-between gap-4">
+          <p className="text-gray-900">
+            {venue.minPricePerSpot === null ? (
+              <span className="text-sm text-gray-500">No upcoming slots</span>
+            ) : (
+              <>
+                <span className="text-sm text-gray-500">from </span>
+                <span className="text-xl font-bold">
+                  ${venue.minPricePerSpot}
+                </span>
+                <span className="text-sm text-gray-500"> / spot</span>
+              </>
+            )}
+          </p>
+          <button
+            onClick={() => onBook(venue.id)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg transition-colors cursor-pointer"
+          >
+            Book Now
+          </button>
+        </div>
       </div>
     </div>
   );

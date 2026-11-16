@@ -3,10 +3,13 @@ import { useState } from 'react';
 import { useBookingStore } from '../store/bookingStore';
 import { useAuthStore } from '../store/authStore';
 import { apiFetch, ApiError } from '../lib/api';
+import { bookingTotal, spotsLabel } from '../lib/bookings';
+import { formatDate, formatTimeRange } from '../lib/dates';
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { booking, reset } = useBookingStore();
+  const { booking, reset, setSpots } = useBookingStore();
+  const maxSpots = booking.slotSpotsRemaining;
   const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,6 +27,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           venueId: booking.venueId,
           slotId: booking.slotId,
+          spots: booking.spots,
         }),
       });
 
@@ -34,7 +38,12 @@ export default function CheckoutPage() {
         navigate('/login', { state: { from: '/checkout' } });
         return;
       }
-      setError('Failed to create booking. Please try again.');
+      // Conflicts such as "Not enough spots left in this slot" are worth showing as they are
+      setError(
+        err instanceof ApiError && err.status === 409
+          ? err.message
+          : 'Failed to create booking. Please try again.',
+      );
       console.error(err);
     } finally {
       setLoading(false);
@@ -72,20 +81,15 @@ export default function CheckoutPage() {
             </p>
             <p className="mb-2">
               <strong>Date:</strong>{' '}
-              {new Date(booking.slotTime).toLocaleDateString('en-US', {
-                dateStyle: 'full',
-              })}
+              {formatDate(booking.slotTime, booking.venueTimezone)}
             </p>
             <p className="mb-2">
               <strong>Time:</strong>{' '}
-              {[booking.slotTime, booking.slotEndTime]
-                .map((time) =>
-                  new Date(time).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  }),
-                )
-                .join(' – ')}
+              {formatTimeRange(
+                booking.slotTime,
+                booking.slotEndTime,
+                booking.venueTimezone,
+              )}
             </p>
             <p className="mb-2">
               <strong>Name:</strong> {user?.name}
@@ -94,20 +98,53 @@ export default function CheckoutPage() {
               <strong>Email:</strong> {user?.email}
             </p>
             <p className="mb-2">
-              <strong>Price:</strong> ${booking.totalPrice} (1 spot)
+              <strong>Total:</strong> $
+              {bookingTotal(booking.pricePerSpot, booking.spots)} (
+              {spotsLabel(booking.spots)} × ${booking.pricePerSpot})
             </p>
             <p>
-              <strong>Status:</strong> Pending Payment
+              <strong>Status:</strong> Waiting for the venue to confirm
             </p>
           </div>
 
           <form onSubmit={handleSubmit}>
+            <div className="mb-6 flex items-center gap-4">
+              <span className="font-bold">Spots</span>
+              <button
+                type="button"
+                aria-label="Fewer spots"
+                onClick={() => setSpots(booking.spots - 1)}
+                disabled={booking.spots <= 1}
+                className="w-10 h-10 rounded-lg bg-gray-200 enabled:hover:bg-gray-300 text-xl font-bold disabled:opacity-50 enabled:cursor-pointer disabled:cursor-not-allowed"
+              >
+                −
+              </button>
+              <span
+                aria-live="polite"
+                className="w-8 text-center text-xl font-bold"
+              >
+                {booking.spots}
+              </span>
+              <button
+                type="button"
+                aria-label="More spots"
+                onClick={() => setSpots(booking.spots + 1)}
+                disabled={booking.spots >= maxSpots}
+                className="w-10 h-10 rounded-lg bg-gray-200 enabled:hover:bg-gray-300 text-xl font-bold disabled:opacity-50 enabled:cursor-pointer disabled:cursor-not-allowed"
+              >
+                +
+              </button>
+              <span className="text-gray-600">
+                {booking.slotSpotsRemaining} left
+              </span>
+            </div>
+
             {error && <div className="mb-4 text-red-600">{error}</div>}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 cursor-pointer"
+              className="w-full bg-indigo-600 enabled:hover:bg-indigo-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 enabled:cursor-pointer disabled:cursor-not-allowed"
             >
               {loading ? 'Processing...' : 'Confirm Booking'}
             </button>

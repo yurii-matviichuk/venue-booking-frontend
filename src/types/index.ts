@@ -1,12 +1,14 @@
 export interface Venue {
   id: string;
   name: string;
-  location: string;
+  address: string;
   city: string;
   timezone: string;
   category: string;
   description: string;
   imageFile: string | null;
+  // Lowest price per spot among upcoming slots; null when the venue has none
+  minPricePerSpot: number | null;
 }
 
 export interface TimeSlot {
@@ -22,13 +24,16 @@ export interface Booking {
   venueId: string;
   venueName: string;
   venueCity: string;
+  venueTimezone: string;
   slotId: string;
   slotTime: string;
   slotEndTime: string;
   customerName: string;
   customerEmail: string;
   date: Date | null;
-  totalPrice: number;
+  pricePerSpot: number;
+  spots: number;
+  slotSpotsRemaining: number;
 }
 
 export interface User {

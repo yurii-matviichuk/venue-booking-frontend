@@ -1,21 +1,19 @@
+import { formatTimeRange } from '../lib/dates';
 import type { TimeSlot } from '../types';
-
-const timeFormat: Intl.DateTimeFormatOptions = {
-  hour: 'numeric',
-  minute: '2-digit',
-};
 
 interface TimeSlotSelectorProps {
   slots: TimeSlot[];
+  timeZone: string;
   onSelect: (slot: TimeSlot) => void;
 }
 
 export default function TimeSlotSelector({
   slots,
+  timeZone,
   onSelect,
 }: TimeSlotSelectorProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 gap-4">
       {slots.map((slot) => (
         <button
           key={slot.id}
@@ -27,16 +25,8 @@ export default function TimeSlotSelector({
               : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
           }`}
         >
-          <div className="text-xs font-normal">
-            {new Date(slot.time).toLocaleDateString('en-US', {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric',
-            })}
-          </div>
           <div className="text-sm">
-            {new Date(slot.time).toLocaleTimeString('en-US', timeFormat)} –{' '}
-            {new Date(slot.endTime).toLocaleTimeString('en-US', timeFormat)}
+            {formatTimeRange(slot.time, slot.endTime, timeZone)}
           </div>
           <div className="text-lg">
             ${slot.price}
