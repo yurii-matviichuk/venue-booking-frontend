@@ -20,7 +20,7 @@ Web app for browsing venues and booking time slots. Visitors browse venues, pick
 - `npm test` — run the Vitest suite once
 - `npm run preview` — serve the production build locally
 
-The pre-commit hook runs `npm run lint && npm run build && npm test`. It does not run Prettier.
+The pre-commit hook runs `npm run lint && npm run build && npm test`. It does not run Prettier. CI (`.github/workflows/ci.yml`) runs lint, `format:check`, build and tests on pushes to `main`, on pull requests and when Vercel finishes a deployment (reported back as a Vercel Deployment Check).
 
 ## Structure
 

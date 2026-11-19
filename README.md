@@ -86,6 +86,12 @@ npm test
 
 The tests are small unit tests that sit next to the code (`*.test.ts` / `*.test.tsx`). They cover the parts with real logic: `apiFetch` error handling, the auth and booking stores, the `RequireAuth` redirect and role check, the date and timezone helpers, and the booking helpers (totals, grouping, expired status). `fetch` is mocked, so the backend doesn't need to be running. The booking rules themselves are tested in the backend. There are no tests for the pages yet.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main` and on every pull request. It installs dependencies with `npm ci`, then runs `npm run lint`, `npm run format:check`, `npm run build` and `npm test`. The Husky pre-commit hook runs the same checks except Prettier, and CI also catches commits made with `--no-verify`.
+
+The workflow also runs when Vercel finishes a deployment (a `repository_dispatch` event) and reports the result back as a Vercel Deployment Check, so production isn't promoted unless the checks pass. `main` is protected on GitHub and requires the `check` job to pass.
+
 ## Deployment
 
 The app is deployed on Vercel and talks to the API on Render. Set `VITE_API_URL=/api` in the Vercel project settings.
