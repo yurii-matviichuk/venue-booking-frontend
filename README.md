@@ -1,5 +1,7 @@
 # Venue Booking
 
+[![CI](https://github.com/yurii-matviichuk/venue-booking-frontend/actions/workflows/ci.yml/badge.svg)](https://github.com/yurii-matviichuk/venue-booking-frontend/actions/workflows/ci.yml)
+
 Frontend for a venue booking app, built with React 19, TypeScript, and Vite. Customers browse venues by city, pick an available time slot and the number of spots, log in, and check out to create a booking. They can also view and cancel their bookings. Venue owners confirm or cancel the bookings made at their venues.
 
 > **Demo app:** This is a portfolio project. All venues and bookings are fictional. Please don't enter real personal data when registering.
