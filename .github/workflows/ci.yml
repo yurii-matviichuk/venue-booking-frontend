@@ -4,16 +4,25 @@ on:
   push:
     branches: [main]
   pull_request:
+  repository_dispatch:
+    types: ['vercel.deployment.success']
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      - name: 'notify vercel'
+        uses: 'vercel/repository-dispatch/actions/status@v1'
+        with:
+          name: 'Vercel - venue-booking-frontend: lint'
       - uses: actions/checkout@v4
+        with:
+          # Vercel's dispatch event runs on the default branch; check the deployed commit instead
+          ref: ${{ github.event.client_payload.git.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
