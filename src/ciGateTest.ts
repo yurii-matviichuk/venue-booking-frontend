@@ -1,1 +1,1 @@
-const unusedValue = 1
+export const   ciGateTest   =   {a:1,   b:2}
